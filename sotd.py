@@ -24,12 +24,16 @@ class Song():
         self._images = []
         self._artists = []
         self.track_name = ''
+        self.track_url = ''
+        self.track_uri = ''
         self.album_name = ''
         self.release_date = None
         self.added_date = None
 
-    def add_song(self, track_name, album_name, added_at_date_str, release_date_str, artists, images):
+    def add_song(self, track_uri, track_name, track_url, album_name, added_at_date_str, release_date_str, artists, images):
         self.track_name = track_name
+        self.track_uri = track_uri
+        self.track_url = track_url
         self.album_name = album_name
         self.release_date = datetime.strptime(release_date_str, '%Y-%m-%d')
         self.added_date = datetime.fromisoformat(added_at_date_str.replace('Z', '+00:00'))
@@ -57,6 +61,8 @@ class Song():
     def json(self):
         return {
             'track_name': self.track_name,
+            'track_url': self.track_url,
+            'track_uri': self.track_uri,
             'album_name': self.album_name,
             'release_date': self.release_date.strftime('%d/%m/%Y'),
             'artists': self._artists,
@@ -136,7 +142,7 @@ def construct_and_execute_request(endpoint, params=None):
 def get_sotd_playlist():
     playlist_id = '0IKkPLCIcb0NlBiZ0wjSkG'
     endpoint = f'/playlists/{playlist_id}'
-    params = {'fields': 'tracks.items(added_at,track.name,track(album(name,artists,images,release_date)))'}
+    params = {'fields': 'tracks.items(added_at,track.name,track.uri,track.external_urls.spotify,track(album(name,artists,images,release_date)))'}
     data = construct_and_execute_request(endpoint, params)
 
     playlist = []
@@ -145,6 +151,8 @@ def get_sotd_playlist():
     for t in data['tracks']['items']:
         added_at = t['added_at']
         track = t['track']
+        track_url = track['external_urls']['spotify']
+        track_uri = track['uri']
         track_name = track['name']
         a = track['album']
         album_name = a['name']
@@ -154,7 +162,7 @@ def get_sotd_playlist():
 
         # track_name, album_name, added_at_date_str, release_date_str, artists, images
         s = Song()
-        s.add_song(track_name, album_name, added_at, release_date, artists, images)
+        s.add_song(track_uri, track_name, track_url, album_name, added_at, release_date, artists, images)
         playlist.append(s)
 
     playlist = sorted(playlist, key=lambda x: x.added_date, reverse=True)
@@ -171,7 +179,18 @@ def add_song_to_past(song):
         data = f.read()
 
     data = json.loads(data)
-    if song not in data:
+
+    # check if song uri is already present in past songs
+    found = False
+    for past_song in data:
+        if song['track_uri'] == past_song['track_uri']:
+            found = True
+            break
+
+    if found:
+        # already present do nothing
+        pass
+    else:
         data.append(song)
 
     with open('past.json', 'w') as f:
