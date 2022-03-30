@@ -166,9 +166,22 @@ def get_sotd():
     song = playlist[0]
     return song
 
+def add_song_to_past(song):
+    with open('past.json') as f:
+        data = f.read()
+
+    data = json.loads(data)
+    if song not in data:
+        data.append(song)
+
+    with open('past.json', 'w') as f:
+        json.dump(data, f)
+
 def main():
     load_config('./conf.txt')
     auth_and_get_token()
     print(get_sotd())
 
-main()
+# run auth functions on import
+load_config('./conf.txt')
+auth_and_get_token()
