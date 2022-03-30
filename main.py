@@ -2,12 +2,13 @@ import requests
 import random
 import string
 import base64
-import webbrowser
 import json
 import sys
 from datetime import datetime
 
-REDIRECT_URI = 'http://localhost:8000/'
+CLIENT_ID = None
+CLIENT_SECRET = None
+BEARER_TOKEN = None
 
 class Image():
     def __init__(self, url, width, height):
@@ -53,39 +54,85 @@ class Song():
         artists = ', '.join(self._artists)
         return f'<li><h3>{self.track_name}</h3>\n<p>Album: {self.album_name}\nArtists: {artists}\n<img src="{self.get_image().url}" /></p></li>'
 
-def client_credentials_flow():
-    # url = 'https://accounts.spotify.com/api/token'
-    # token = base64.b64encode(f'{CLIENT_ID}:{CLIENT_SECRET}'.encode('utf-8')).decode('utf-8')
-    # headers = {
-    #     'Authorization': f'Basic {token}',
-    #     'Content-Type': 'application/x-www-form-urlencoded',
-    # }
-    # data = {
-    #     'grant_type': 'client_credentials',
-    # }
+def load_config(config_path):
+    global CLIENT_ID
+    global CLIENT_SECRET
 
-    # r = requests.post(url, headers=headers, data=data)
-    # if r.status_code != 200:
-    #     print('error')
-    #     sys.exit(-1)
+    with open(config_path) as f:
+        for line in f:
+            d = line.strip().split(':')
+            d = list(map(lambda x: x.strip(), d))
+            assert len(d) == 2
+            k, v = d
+            if k == 'CLIENT_ID':
+                CLIENT_ID = v
+            elif k == 'CLIENT_SECRET':
+                CLIENT_SECRET = v
 
-    # resp = json.loads(r.text)
-    # bearer_token = resp['access_token']
-    print(bearer_token)
+    if CLIENT_SECRET is None or CLIENT_SECRET is None:
+        print('config failure...')
+        sys.exit(-1)
+
+def auth_and_get_token():
+    global BEARER_TOKEN
+
+    url = 'https://accounts.spotify.com/api/token'
+    token = base64.b64encode(f'{CLIENT_ID}:{CLIENT_SECRET}'.encode('utf-8')).decode('utf-8')
     headers = {
-        'Authorization': f'Bearer {bearer_token}',
+        'Authorization': f'Basic {token}',
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+    data = {
+        'grant_type': 'client_credentials',
     }
 
-    playlist_id = '0IKkPLCIcb0NlBiZ0wjSkG'
-    fields = 'tracks.items(added_at,track.name,track(album(name,artists,images,release_date)))'
-    url = f'https://api.spotify.com/v1/playlists/{playlist_id}?'
-    url += f'fields={fields}'
+    r = requests.post(url, headers=headers, data=data)
+    if r.status_code != 200:
+        print('auth error')
+        sys.exit(-1)
+
+    resp = json.loads(r.text)
+    BEARER_TOKEN = resp['access_token']
+
+def construct_and_execute_request(endpoint, params=None):
+    headers = {
+        'Authorization': f'Bearer {BEARER_TOKEN}',
+    }
+
+    # build url
+    url = f'https://api.spotify.com/v1'
+    url += endpoint
+    if params is not None:
+        url += '?'
+    for k, v in params.items():
+        url += f'{k}={v}'
+        url += '&'
+    url = url.rstrip('&')
+
     r = requests.get(url, headers=headers)
+
+    if r.status_code != 200:
+        # the BEARER token probably expired, renew and try again
+        auth_and_get_token()
+        headers = {
+            'Authorization': f'Bearer {BEARER_TOKEN}',
+        }
+        r = requests.get(url, headers=headers)
+        if r.status_code != 200:
+            print('something went wrong even after re-auth...')
+            sys.exit(-1)
+
+    return r.text
+
+def get_sotd_playlist():
+    playlist_id = '0IKkPLCIcb0NlBiZ0wjSkG'
+    endpoint = f'/playlists/{playlist_id}'
+    params = {'fields': 'tracks.items(added_at,track.name,track(album(name,artists,images,release_date)))'}
+    data = construct_and_execute_request(endpoint, params)
 
     playlist = []
 
-    print(r.status_code)
-    data = json.loads(r.text)
+    data = json.loads(data)
     for t in data['tracks']['items']:
         added_at = t['added_at']
         track = t['track']
@@ -102,11 +149,12 @@ def client_credentials_flow():
         playlist.append(s)
 
     playlist = sorted(playlist, key=lambda x: x.added_date, reverse=True)
-    print('<html>')
-    print('<ul>')
     for song in playlist:
-        print('\t' + song.html())
-    print('</ul>')
-    print('</html>')
+        print(song)
 
-client_credentials_flow()
+def main():
+    load_config('./conf.txt')
+    auth_and_get_token()
+    get_sotd_playlist()
+
+main()
