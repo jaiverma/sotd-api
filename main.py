@@ -54,6 +54,15 @@ class Song():
         artists = ', '.join(self._artists)
         return f'<li><h3>{self.track_name}</h3>\n<p>Album: {self.album_name}\nArtists: {artists}\n<img src="{self.get_image().url}" /></p></li>'
 
+    def json(self):
+        return {
+            'track_name': self.track_name,
+            'album_name': self.album_name,
+            'release_date': self.release_date.strftime('%d/%m/%Y'),
+            'artists': self._artists,
+            'image': self.get_image().url,
+        }
+
 def load_config(config_path):
     global CLIENT_ID
     global CLIENT_SECRET
@@ -149,12 +158,17 @@ def get_sotd_playlist():
         playlist.append(s)
 
     playlist = sorted(playlist, key=lambda x: x.added_date, reverse=True)
-    for song in playlist:
-        print(song)
+    return list(map(lambda x: x.json(), playlist))
+
+def get_sotd():
+    playlist = get_sotd_playlist()
+    assert len(playlist) > 0
+    song = playlist[0]
+    return song
 
 def main():
     load_config('./conf.txt')
     auth_and_get_token()
-    get_sotd_playlist()
+    print(get_sotd())
 
 main()
