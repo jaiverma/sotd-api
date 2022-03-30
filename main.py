@@ -8,7 +8,6 @@ import sys
 from datetime import datetime
 
 REDIRECT_URI = 'http://localhost:8000/'
-SCOPES = 'user-read-private user-read-email'
 
 class Image():
     def __init__(self, url, width, height):
@@ -109,16 +108,5 @@ def client_credentials_flow():
         print('\t' + song.html())
     print('</ul>')
     print('</html>')
-
-def auth_flow():
-    state = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    url = 'https://accounts.spotify.com/authorize?'
-    url += '&response_type=code'
-    url += f'&client_id={CLIENT_ID}'
-    url += f'&scope={SCOPES}'
-    url += f'&redirect_uri={REDIRECT_URI}'
-    url += f'&state={state}'
-
-    webbrowser.open(url)
 
 client_credentials_flow()
