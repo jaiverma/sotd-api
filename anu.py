@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sotd
 
@@ -23,3 +23,7 @@ def add_to_past():
         return 'done!'
     else:
         return 'failed...'
+
+@app.route('/past_songs')
+def past_songs():
+    return jsonify(sotd.get_past_songs())

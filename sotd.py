@@ -196,6 +196,17 @@ def add_song_to_past(song):
     with open('past.json', 'w') as f:
         json.dump(data, f)
 
+def get_past_songs():
+    past = None
+    with open('past.json') as f:
+        past = json.load(f)
+
+    if past is None:
+        print('error reading past songs :(')
+        sys.exit(-1)
+
+    return past
+
 def main():
     load_config('./conf.txt')
     auth_and_get_token()
