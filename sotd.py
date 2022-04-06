@@ -172,6 +172,13 @@ def get_sotd():
     playlist = get_sotd_playlist()
     assert len(playlist) > 0
     song = playlist[0]
+
+    # add song of the day to past song list too so that when a new song is added
+    # to the playlist, our past song list is already updated
+    # to make sure we don't display the current song of the day in the past
+    # songs list, only return `l[1:]`  in `get_past_songs`
+    add_song_to_past(song)
+
     return song
 
 def add_song_to_past(song):
@@ -191,7 +198,7 @@ def add_song_to_past(song):
         # already present do nothing
         pass
     else:
-        data.append(song)
+        data.insert(0, song)
 
     with open('past.json', 'w') as f:
         json.dump(data, f)
@@ -205,7 +212,7 @@ def get_past_songs():
         print('error reading past songs :(')
         sys.exit(-1)
 
-    return past
+    return past[1:]
 
 def main():
     load_config('./conf.txt')
