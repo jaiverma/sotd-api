@@ -27,3 +27,6 @@ def add_to_past():
 @app.route('/past_songs')
 def past_songs():
     return jsonify(sotd.get_past_songs())
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0')
