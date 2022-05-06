@@ -35,7 +35,10 @@ class Song():
         self.track_uri = track_uri
         self.track_url = track_url
         self.album_name = album_name
-        self.release_date = datetime.strptime(release_date_str, '%Y-%m-%d')
+        try:
+            self.release_date = datetime.strptime(release_date_str, '%Y-%m-%d')
+        except ValueError:
+            self.release_date = datetime.strptime(release_date_str, '%Y')
         self.added_date = datetime.fromisoformat(added_at_date_str.replace('Z', '+00:00'))
         self._artists.extend(artists)
         self._images.extend([Image(i['url'], i['width'], i['height']) for i in images])
