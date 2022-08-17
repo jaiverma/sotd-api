@@ -112,20 +112,21 @@ def auth_and_get_token():
     resp = json.loads(r.text)
     BEARER_TOKEN = resp['access_token']
 
-def construct_and_execute_request(endpoint, params=None):
+def construct_and_execute_request(endpoint, params=None, url=None):
     headers = {
         'Authorization': f'Bearer {BEARER_TOKEN}',
     }
 
     # build url
-    url = f'https://api.spotify.com/v1'
-    url += endpoint
-    if params is not None:
-        url += '?'
-    for k, v in params.items():
-        url += f'{k}={v}'
-        url += '&'
-    url = url.rstrip('&')
+    if url is None:
+        url = f'https://api.spotify.com/v1'
+        url += endpoint
+        if params is not None:
+            url += '?'
+        for k, v in params.items():
+            url += f'{k}={v}'
+            url += '&'
+        url = url.rstrip('&')
 
     r = requests.get(url, headers=headers)
 
@@ -145,28 +146,41 @@ def construct_and_execute_request(endpoint, params=None):
 def get_sotd_playlist():
     playlist_id = '0IKkPLCIcb0NlBiZ0wjSkG'
     endpoint = f'/playlists/{playlist_id}'
-    params = {'fields': 'tracks.items(added_at,track.name,track.uri,track.external_urls.spotify,track(album(name,artists,images,release_date)))'}
+    params = {'fields': 'tracks.next,tracks.items(added_at,track.name,track.uri,track.external_urls.spotify,track(album(name,artists,images,release_date)))'}
     data = construct_and_execute_request(endpoint, params)
 
     playlist = []
 
     data = json.loads(data)
-    for t in data['tracks']['items']:
-        added_at = t['added_at']
-        track = t['track']
-        track_url = track['external_urls']['spotify']
-        track_uri = track['uri']
-        track_name = track['name']
-        a = track['album']
-        album_name = a['name']
-        release_date = a['release_date']
-        images = a['images']
-        artists = [i['name'] for i in a['artists']]
+    data = data['tracks']
 
-        # track_name, album_name, added_at_date_str, release_date_str, artists, images
-        s = Song()
-        s.add_song(track_uri, track_name, track_url, album_name, added_at, release_date, artists, images)
-        playlist.append(s)
+    while True:
+        for t in data['items']:
+            added_at = t['added_at']
+            track = t['track']
+            track_url = track['external_urls']['spotify']
+            track_uri = track['uri']
+            track_name = track['name']
+            a = track['album']
+            album_name = a['name']
+            release_date = a['release_date']
+            images = a['images']
+            artists = [i['name'] for i in a['artists']]
+
+            # track_name, album_name, added_at_date_str, release_date_str, artists, images
+            s = Song()
+            s.add_song(track_uri, track_name, track_url, album_name, added_at, release_date, artists, images)
+            playlist.append(s)
+
+        # check for 'next' field in 'tracks'
+        # this is the URL for the next page of tracks
+        # if no next page, then 'null'
+        next_url = data['next']
+        if next_url is None:
+            break
+
+        data = construct_and_execute_request(None, params, next_url)
+        data = json.loads(data)
 
     playlist = sorted(playlist, key=lambda x: x.added_date, reverse=True)
     return list(map(lambda x: x.json(), playlist))
