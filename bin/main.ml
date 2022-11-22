@@ -1,6 +1,7 @@
 open Lwt
 open Cohttp
 open Cohttp_lwt_unix
+module Y = Yojson.Safe
 
 let auth_and_get_token () =
   let url = Uri.of_string "https://accounts.spotify.com/api/token" in
@@ -21,6 +22,7 @@ let auth_and_get_token () =
   >>= fun (resp, body) ->
   Printf.printf "Response code: %d\n" (resp |> Response.status |> Code.code_of_status);
   Cohttp_lwt.Body.to_string body
+  >|= fun body -> Y.from_string body |> Y.Util.member "access_token" |> Y.Util.to_string
 ;;
 
 let () =

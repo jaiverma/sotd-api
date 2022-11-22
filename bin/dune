@@ -1,4 +1,4 @@
 (executable
  (public_name sotd_api_ocaml)
  (name main)
- (libraries lwt cohttp-lwt-unix))
+ (libraries lwt cohttp-lwt-unix yojson))
