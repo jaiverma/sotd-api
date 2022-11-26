@@ -34,14 +34,21 @@ let auth_and_get_token conf =
   }
 ;;
 
-let api_request config endpoint params =
+let api_request ?endpoint ?params url config =
   (* validate config *)
   match config.bearer_token with
   | None -> Lwt.return @@ Error "bearer token not set"
   | Some token ->
-    let url = "https://api.spotify.com/v1" in
-    let url = url ^ endpoint in
-    let url = Uri.add_query_params (Uri.of_string url) params in
+    let url =
+      match endpoint with
+      | Some endpoint -> url ^ endpoint
+      | None -> url
+    in
+    let url =
+      match params with
+      | Some params -> Uri.add_query_params (Uri.of_string url) params
+      | None -> Uri.of_string url
+    in
     let headers = Header.of_list [ "Authorization", "Bearer " ^ token ] in
     Client.get ~headers url
     >>= fun (resp, body) ->
@@ -59,12 +66,13 @@ let setup_config () =
 let main =
   auth_and_get_token @@ setup_config ()
   >>= fun config ->
+  let url = "https://api.spotify.com/v1" in
   let params =
     ( "fields"
     , [ "tracks.next,tracks.items(added_at,track.name,track.uri,track.external_urls.spotify,track(album(name,artists,images,release_date)))"
       ] )
   in
-  api_request config "/playlists/0IKkPLCIcb0NlBiZ0wjSkG" [ params ]
+  api_request url config ~endpoint:"/playlists/0IKkPLCIcb0NlBiZ0wjSkG" ~params:[ params ]
   >|= function
   | Ok resp -> Printf.printf "%s\n" resp
   | Error e -> Printf.printf "%s\n" e
