@@ -3,11 +3,15 @@ open Cohttp
 open Cohttp_lwt_unix
 module Y = Yojson.Safe
 
-let auth_and_get_token () =
+type spotify_config =
+  { client_id : string
+  ; client_secret : string
+  ; bearer_token : string option
+  }
+
+let auth_and_get_token conf =
   let url = Uri.of_string "https://accounts.spotify.com/api/token" in
-  let client_id = Sys.getenv "CLIENT_ID" in
-  let client_secret = Sys.getenv "CLIENT_SECRET" in
-  let token = Base64.encode_exn @@ client_id ^ ":" ^ client_secret in
+  let token = Base64.encode_exn @@ conf.client_id ^ ":" ^ conf.client_secret in
   let headers =
     Header.of_list
       [ "Authorization", "Basic " ^ token
@@ -22,10 +26,48 @@ let auth_and_get_token () =
   >>= fun (resp, body) ->
   Printf.printf "Response code: %d\n" (resp |> Response.status |> Code.code_of_status);
   Cohttp_lwt.Body.to_string body
-  >|= fun body -> Y.from_string body |> Y.Util.member "access_token" |> Y.Util.to_string
+  >|= fun body ->
+  let token = Y.from_string body |> Y.Util.member "access_token" |> Y.Util.to_string in
+  { client_id = conf.client_id
+  ; client_secret = conf.client_secret
+  ; bearer_token = Some token
+  }
 ;;
 
-let () =
-  let body = Lwt_main.run @@ auth_and_get_token () in
-  print_endline @@ body ^ "\n"
+let api_request config endpoint params =
+  (* validate config *)
+  match config.bearer_token with
+  | None -> Lwt.return @@ Error "bearer token not set"
+  | Some token ->
+    let url = "https://api.spotify.com/v1" in
+    let url = url ^ endpoint in
+    let url = Uri.add_query_params (Uri.of_string url) params in
+    let headers = Header.of_list [ "Authorization", "Bearer " ^ token ] in
+    Client.get ~headers url
+    >>= fun (resp, body) ->
+    Printf.printf "Response code: %d\n" (resp |> Response.status |> Code.code_of_status);
+    Cohttp_lwt.Body.to_string body >|= fun body -> Ok body
 ;;
+
+let setup_config () =
+  { client_id = Sys.getenv "CLIENT_ID"
+  ; client_secret = Sys.getenv "CLIENT_SECRET"
+  ; bearer_token = None
+  }
+;;
+
+let main =
+  auth_and_get_token @@ setup_config ()
+  >>= fun config ->
+  let params =
+    ( "fields"
+    , [ "tracks.next,tracks.items(added_at,track.name,track.uri,track.external_urls.spotify,track(album(name,artists,images,release_date)))"
+      ] )
+  in
+  api_request config "/playlists/0IKkPLCIcb0NlBiZ0wjSkG" [ params ]
+  >|= function
+  | Ok resp -> Printf.printf "%s\n" resp
+  | Error e -> Printf.printf "%s\n" e
+;;
+
+let () = Lwt_main.run main
