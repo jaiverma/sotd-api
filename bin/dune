@@ -1,4 +1,6 @@
 (executable
  (public_name sotd_api_ocaml)
  (name main)
- (libraries lwt cohttp-lwt-unix yojson))
+ (libraries lwt cohttp-lwt-unix yojson)
+ (preprocess
+  (pps ppx_deriving_yojson ppx_deriving.show)))
