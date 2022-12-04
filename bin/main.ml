@@ -9,7 +9,13 @@ type spotify_config =
   ; bearer_token : string option
   }
 
-type song =
+type catalog =
+  { tracks : song list [@key "items"]
+  ; next : string option
+  }
+[@@deriving yojson, show { with_path = false }]
+
+and song =
   { added_at : string
   ; track : track
   }
@@ -117,9 +123,8 @@ let get_playlist config playlist_id =
   | Error _ as err -> err
   | Ok resp ->
     let json = Y.from_string resp in
-    let tracks = Y.Util.member "tracks" json |> Y.Util.member "items" |> Y.Util.to_list in
-    List.iter (fun item -> Y.to_string item |> Printf.printf "%s\n") tracks;
-    Ok (List.map song_of_yojson tracks)
+    let playlist = Y.Util.member "tracks" json |> catalog_of_yojson in
+    playlist
 ;;
 
 let main =
@@ -129,11 +134,10 @@ let main =
   get_playlist config playlist_id
   >|= function
   | Ok resp ->
-    List.iter
-      (function
-        | Ok song -> Printf.printf "%s\n" @@ show_song song
-        | Error e -> Printf.printf "Error: %s\n" e)
-      resp
+    List.iter (fun song -> Printf.printf "%s\n" @@ show_song song) resp.tracks;
+    (match resp.next with
+    | Some url -> Printf.printf "next: %s\n" url
+    | None -> Printf.printf "next: no next url\n")
   | Error e -> Printf.printf "%s\n" e
 ;;
 

@@ -4,3 +4,8 @@
  (libraries lwt cohttp-lwt-unix yojson)
  (preprocess
   (pps ppx_deriving_yojson ppx_deriving.show)))
+
+(env
+ (dev
+  (flags
+   (:standard -w -32))))
