@@ -38,6 +38,7 @@ class Song():
         try:
             self.release_date = datetime.strptime(release_date_str, '%Y-%m-%d')
         except ValueError:
+            print(track_name, track_url, album_name, release_date_str)
             self.release_date = datetime.strptime(release_date_str, '%Y')
         self.added_date = datetime.fromisoformat(added_at_date_str.replace('Z', '+00:00'))
         self._artists.extend(artists)
@@ -169,7 +170,12 @@ def get_sotd_playlist():
 
             # track_name, album_name, added_at_date_str, release_date_str, artists, images
             s = Song()
-            s.add_song(track_uri, track_name, track_url, album_name, added_at, release_date, artists, images)
+            try:
+                s.add_song(track_uri, track_name, track_url, album_name, added_at, release_date, artists, images)
+            except:
+                # we failed to add the song, probably the song was removed from spotify
+                # we can skip adding this song
+                continue
             playlist.append(s)
 
         # check for 'next' field in 'tracks'
