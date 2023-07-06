@@ -3,3 +3,4 @@ conf.txt
 __pycache__
 *.pyc
 sotd_venv/
+state.bin

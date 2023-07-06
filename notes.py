@@ -16,6 +16,11 @@ LOVE_NOTES = [
     'a', 'b', 'c', 'd', 'e'
 ]
 
+class Repeat(Timer):
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.function(*self.args, **self.kwargs)
+
 def load_state(config_path):
     global RANDOM_STATE_PATH
 
@@ -26,7 +31,7 @@ def load_state(config_path):
             d = list(map(lambda x: x.strip(), d))
             assert len(d) == 2
             k, v = d
-            if k == 'RANDOM_STATE'
+            if k == 'RANDOM_STATE':
                 RANDOM_STATE_PATH = v
 
     assert(RANDOM_STATE_PATH is not None)
@@ -38,6 +43,8 @@ def load_state(config_path):
     else:
         random.seed(time.time())
         state = random.getstate()
+        with open(RANDOM_STATE_PATH, 'wb') as f:
+            pickle.dump(state, f)
 
     return state
 
@@ -49,20 +56,23 @@ def save_state(state=random.getstate()):
 
     with open(RANDOM_STATE_PATH, 'wb') as f:
         pickle.dump(state, f)
-    HI_NOTE_IDX = random.randint(0, len(HI_NOTES))
-    LOVE_NOTE_IDX = random.randint(0, len(LOVE_NOTES))
+
+    HI_NOTE_IDX = random.randint(0, len(HI_NOTES) - 1)
+    LOVE_NOTE_IDX = random.randint(0, len(LOVE_NOTES) - 1)
 
 def init():
     state = load_state('./conf.txt')
+    save_state()
     assert(state is not None)
     random.setstate(state)
 
     # setup timer to generate new random number
     # every day, and to save random state
-    current_time = datetime.today(pytz.timezone('Asia/Kolkata'))
-    next_time = current_time + timedelta(days=1)
+    current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
+    next_time = current_time.replace(day=current_time.day, hour=0, minute=0, second=0, microsecond=0) + timedelta(seconds=10)
+    # next_time = current_time + timedelta(seconds=10)
     delta = next_time - current_time
-    t = Timer(delta.total_seconds, save_state)
+    t = Repeat(interval=delta.total_seconds(), function=save_state)
     t.start()
 
 def get_hi_note():
@@ -70,3 +80,5 @@ def get_hi_note():
 
 def get_love_note():
     return LOVE_NOTES[LOVE_NOTE_IDX]
+
+init()

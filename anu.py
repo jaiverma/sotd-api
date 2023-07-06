@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sotd
+import notes
 
 app = Flask(__name__)
 CORS(app)
@@ -30,11 +31,11 @@ def past_songs():
 
 @app.route('/note/hi')
 def hi_note():
-    return 'hu'
+    return notes.get_hi_note()
 
 @app.route('/note/love')
 def love_note():
-    return '<3'
+    return notes.get_love_note()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
