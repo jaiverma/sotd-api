@@ -28,5 +28,13 @@ def add_to_past():
 def past_songs():
     return jsonify(sotd.get_past_songs())
 
+@app.route('/note/hi')
+def hi_note():
+    return 'hu'
+
+@app.route('/note/love')
+def love_note():
+    return '<3'
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
