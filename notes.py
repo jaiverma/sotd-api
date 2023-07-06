@@ -10,10 +10,23 @@ RANDOM_STATE_PATH = None
 HI_NOTE_IDX = None
 LOVE_NOTE_IDX = None
 HI_NOTES = [
-    'a', 'b', 'c', 'd', 'e'
+    'Anu',
+    'Coco',
+    'Anubhuti',
+    'Anubhuti Agarwal',
+    'Maharani Coco',
+    'Jaanu',
+    'Jojo\'s lover',
+    'Lover of Jai',
+    'Soda',
+    'Soda Screamer'
 ]
 LOVE_NOTES = [
-    'a', 'b', 'c', 'd', 'e'
+    'I love you',
+    'I adore you',
+    'You are the love of my life',
+    'I miss you',
+    'Love you to the moon and back'
 ]
 
 class Repeat(Timer):
@@ -69,16 +82,16 @@ def init():
     # setup timer to generate new random number
     # every day, and to save random state
     current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
-    next_time = current_time.replace(day=current_time.day, hour=0, minute=0, second=0, microsecond=0) + timedelta(seconds=10)
+    next_time = current_time.replace(day=current_time.day, hour=0, minute=0, second=0, microsecond=0) + timedelta(days=10)
     # next_time = current_time + timedelta(seconds=10)
     delta = next_time - current_time
     t = Repeat(interval=delta.total_seconds(), function=save_state)
     t.start()
 
 def get_hi_note():
-    return HI_NOTES[HI_NOTE_IDX]
+    return 'Hu ' + HI_NOTES[HI_NOTE_IDX]
 
 def get_love_note():
-    return LOVE_NOTES[LOVE_NOTE_IDX]
+    return LOVE_NOTES[LOVE_NOTE_IDX] + ' Anu'
 
 init()
