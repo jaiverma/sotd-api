@@ -82,9 +82,10 @@ def init():
     # setup timer to generate new random number
     # every day, and to save random state
     current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
-    next_time = current_time.replace(day=current_time.day, hour=0, minute=0, second=0, microsecond=0) + timedelta(days=10)
+    next_time = current_time.replace(day=current_time.day, hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
     # next_time = current_time + timedelta(seconds=10)
     delta = next_time - current_time
+    print(f'Time left: {delta}, ({delta.total_seconds()} seconds)')
     t = Repeat(interval=delta.total_seconds(), function=save_state)
     t.start()
 
