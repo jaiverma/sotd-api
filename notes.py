@@ -70,8 +70,15 @@ def save_state(state=random.getstate()):
     with open(RANDOM_STATE_PATH, 'wb') as f:
         pickle.dump(state, f)
 
-    HI_NOTE_IDX = random.randint(0, len(HI_NOTES) - 1)
-    LOVE_NOTE_IDX = random.randint(0, len(LOVE_NOTES) - 1)
+    new_hi_note_idx = random.randint(0, len(HI_NOTES) - 1)
+    while new_hi_note_idx == HI_NOTE_IDX:
+        new_hi_note_idx = random.randint(0, len(HI_NOTES) - 1)
+    HI_NOTE_IDX = new_hi_note_idx
+
+    new_love_note_idx = random.randint(0, len(LOVE_NOTES) - 1)
+    while new_love_note_idx == LOVE_NOTE_IDX:
+        new_love_note_idx = random.randint(0, len(LOVE_NOTES) - 1)
+    LOVE_NOTE_IDX = new_love_note_idx
 
 def init():
     state = load_state('./conf.txt')
@@ -85,7 +92,7 @@ def init():
     next_time = current_time.replace(day=current_time.day, hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
     # next_time = current_time + timedelta(seconds=10)
     delta = next_time - current_time
-    print(f'Time left: {delta}, ({delta.total_seconds()} seconds)')
+    print(f'Next refresh: {next_time}, Time left: ({delta.total_seconds()} seconds)')
     t = Repeat(interval=delta.total_seconds(), function=save_state)
     t.start()
 

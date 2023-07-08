@@ -19,7 +19,6 @@ def add_to_past():
     content_type = request.headers.get('Content-Type')
     if content_type == 'application/json':
         data = request.json
-        print(data)
         sotd.add_song_to_past(data)
         return 'done!'
     else:

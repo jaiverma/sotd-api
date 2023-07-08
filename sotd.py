@@ -38,7 +38,7 @@ class Song():
         try:
             self.release_date = datetime.strptime(release_date_str, '%Y-%m-%d')
         except ValueError:
-            print(track_name, track_url, album_name, release_date_str)
+            # print(track_name, track_url, album_name, release_date_str)
             self.release_date = datetime.strptime(release_date_str, '%Y')
         self.added_date = datetime.fromisoformat(added_at_date_str.replace('Z', '+00:00'))
         self._artists.extend(artists)
