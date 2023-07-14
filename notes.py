@@ -63,7 +63,7 @@ def save_state(state=random.getstate()):
     global HI_NOTE_IDX
     global LOVE_NOTE_IDX
 
-    print('save_state called from timer!')
+    print('[*] save_state called')
 
     with open(RANDOM_STATE_PATH, 'wb') as f:
         pickle.dump(state, f)
@@ -83,12 +83,10 @@ def save_state(state=random.getstate()):
 # - [5]   : 01
 # - [6:8] : 00 00 00
 def handle_client_msg(msg):
-    print(repr(msg))
     if len(msg) != 8:
         return False
 
     magic = struct.unpack('<I', msg[:4])[0]
-    print(magic)
     if magic != 0xc0c0:
         return False
 
