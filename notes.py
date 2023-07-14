@@ -3,8 +3,11 @@ import pickle
 import time
 import pytz
 import os
+import threading
+import select
+import socket
+import struct
 from datetime import datetime, timedelta
-from threading import Timer
 
 RANDOM_STATE_PATH = None
 HI_NOTE_IDX = None
@@ -28,11 +31,6 @@ LOVE_NOTES = [
     'I miss you',
     'Love you to the moon and back'
 ]
-
-class Repeat(Timer):
-    def run(self):
-        while not self.finished.wait(self.interval):
-            self.function(*self.args, **self.kwargs)
 
 def load_state(config_path):
     global RANDOM_STATE_PATH
@@ -80,20 +78,69 @@ def save_state(state=random.getstate()):
         new_love_note_idx = random.randint(0, len(LOVE_NOTES) - 1)
     LOVE_NOTE_IDX = new_love_note_idx
 
+# handle client data
+# - [0:4] : c0 c0 00 00
+# - [5]   : 01
+# - [6:8] : 00 00 00
+def handle_client_msg(msg):
+    print(repr(msg))
+    if len(msg) != 8:
+        return False
+
+    magic = struct.unpack('<I', msg[:4])[0]
+    print(magic)
+    if magic != 0xc0c0:
+        return False
+
+    toggle = struct.unpack('<I', msg[4:])[0]
+    if toggle != 1:
+        return False
+
+    save_state()
+    return True
+
+def state_listener():
+    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    socket_path = '/tmp/notes_state.sock'
+
+    # clean up existing socket if it may exist
+    try:
+        os.unlink(socket_path)
+    except OSError:
+        if os.path.exists(socket_path):
+            raise
+
+    server.setblocking(0)
+    server.bind(socket_path)
+    server.listen(5)
+
+    inputs = [server]
+
+    while True:
+        readable, _, err = select.select(inputs, [], inputs, 0.5)
+        for s in readable:
+            if s is server:
+                connection, client_info = s.accept()
+                connection.setblocking(0)
+                inputs.append(connection)
+            else:
+                # this is a connected client
+                data = s.recv(1024)
+                handle_client_msg(data)
+                inputs.remove(s)
+                s.close()
+
+        for s in err:
+            inputs.remove(s)
+            s.close()
+
 def init():
     state = load_state('./conf.txt')
     save_state()
     assert(state is not None)
     random.setstate(state)
 
-    # setup timer to generate new random number
-    # every day, and to save random state
-    current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
-    next_time = current_time.replace(day=current_time.day, hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    # next_time = current_time + timedelta(seconds=10)
-    delta = next_time - current_time
-    print(f'Next refresh: {next_time}, Time left: ({delta.total_seconds()} seconds)')
-    t = Repeat(interval=delta.total_seconds(), function=save_state)
+    t = threading.Thread(target=state_listener)
     t.start()
 
 def get_hi_note():
