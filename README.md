@@ -19,6 +19,12 @@ To start the development server,
 $ python wsgi.py
 ```
 
+To run locally with uwsgi,
+
+```
+$ uwsgi --ini ./sotd_api.ini --http :5000
+```
+
 To run this on a server using systemd, I created the following service
 definition,
 
