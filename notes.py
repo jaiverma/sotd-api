@@ -7,6 +7,7 @@ import threading
 import select
 import socket
 import struct
+from uwsgidecorators import *
 from datetime import datetime, timedelta
 
 RANDOM_STATE_PATH = None
@@ -59,6 +60,7 @@ def load_state(config_path):
 
     return state
 
+@cron(-1, -1, -1, -1, -1)
 def save_state(state=random.getstate()):
     global HI_NOTE_IDX
     global LOVE_NOTE_IDX
@@ -136,10 +138,14 @@ def init():
     state = load_state('./conf.txt')
     save_state()
     assert(state is not None)
-    random.setstate(state)
+    try:
+        random.setstate(state)
+    except TypeError:
+        print('[-] Failed to load random state')
+        pass
 
-    t = threading.Thread(target=state_listener)
-    t.start()
+    # t = threading.Thread(target=state_listener)
+    # t.start()
 
 def get_hi_note():
     return 'Hu ' + HI_NOTES[HI_NOTE_IDX]
