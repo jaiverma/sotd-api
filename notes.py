@@ -57,7 +57,7 @@ def load_state(config_path):
 
     return state
 
-@cron(-1, -1, -1, -1, -1)
+@cron(30, 19, -1, -1, -1)
 def save_state(_num=0):
     global HI_NOTE_IDX
     global LOVE_NOTE_IDX
