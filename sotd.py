@@ -129,6 +129,7 @@ def construct_and_execute_request(endpoint, params=None, url=None):
             url += '&'
         url = url.rstrip('&')
 
+    print(f'sending request: {url}')
     r = requests.get(url, headers=headers)
 
     if r.status_code != 200:
@@ -146,14 +147,13 @@ def construct_and_execute_request(endpoint, params=None, url=None):
 
 def get_sotd_playlist():
     playlist_id = '0IKkPLCIcb0NlBiZ0wjSkG'
-    endpoint = f'/playlists/{playlist_id}'
-    params = {'fields': 'tracks.next,tracks.items(added_at,track.name,track.uri,track.external_urls.spotify,track(album(name,artists,images,release_date)))'}
+    endpoint = f'/playlists/{playlist_id}/tracks'
+    params = {'fields': 'next,items(added_at,track.name,track.uri,track.external_urls.spotify,track(album(name,artists,images,release_date)))'}
     data = construct_and_execute_request(endpoint, params)
 
     playlist = []
 
     data = json.loads(data)
-    data = data['tracks']
 
     while True:
         for t in data['items']:
@@ -182,6 +182,7 @@ def get_sotd_playlist():
         # this is the URL for the next page of tracks
         # if no next page, then 'null'
         next_url = data['next']
+        print(next_url)
         if next_url is None:
             break
 
